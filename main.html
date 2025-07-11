@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ Management App</title>
+    <style>
+        /* CSS Anda akan di sini */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #0056b3;
+        }
+        form {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .faq-list {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .faq-item {
+            background-color: #f0f8ff;
+            border: 1px solid #cfe2ff;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .faq-item h3 {
+            margin: 0 0 5px 0;
+            color: #0056b3;
+        }
+        .faq-item p {
+            margin: 0;
+            color: #555;
+        }
+        .faq-item .media-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .faq-item .media-container img,
+        .faq-item .media-container video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .faq-actions button {
+            margin-right: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        #faqForm button {
+            background-color: #28a745;
+        }
+        #faqForm button:hover {
+            background-color: #218838;
+        }
+        .logout-btn {
+            background-color: #dc3545;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FAQ Management Application</h1>
+
+        <div id="authSection">
+            <h2>Login / Register</h2>
+            <form id="authForm">
+                <input type="text" id="authUsername" placeholder="Username" required><br>
+                <input type="password" id="authPassword" placeholder="Password" required><br>
+                <button type="submit" id="loginBtn">Login</button>
+                <button type="button" id="registerBtn">Register</button>
+            </form>
+            <div id="authMessage" class="message"></div>
+        </div>
+
+        <div id="appSection" style="display: none;">
+            <h2>Welcome, <span id="loggedInUsername"></span>!</h2>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+
+            <h3>Manage FAQs</h3>
+            <form id="faqForm">
+                <input type="hidden" id="faqId">
+                <input type="text" id="faqQuestion" placeholder="Question" required><br>
+                <textarea id="faqAnswer" placeholder="Answer" rows="4" required></textarea><br>
+                <input type="text" id="faqMediaUrl" placeholder="Media URL (Image/Video Link - optional)"><br> <button type="submit" id="submitFaqBtn">Add FAQ</button>
+                <button type="button" id="cancelEditBtn" style="display: none;">Cancel Edit</button>
+            </form>
+            <div id="faqMessage" class="message"></div>
+
+            <div class="faq-list">
+                <h3>Current FAQs</h3>
+                <div id="faqsContainer">
+                    <p>Loading FAQs...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AUTH_SERVICE_URL = 'https://script.google.com/macros/s/AKfycbyZpnh5ePdUHKe3nZIQFg-hYew2Lo9ToiH0AeU7zzglbAtzkf3N0bJ9cYY-abkZIjLrPw/exec'; // Ganti dengan URL Aplikasi Web GAS untuk Auth
+        const FAQ_SERVICE_URL = 'https://script.google.com/macros/s/AKfycbynL6xHLL8qwhwHlcIVAMm1eQ--DNSPQlNEIiEeETpf1ue1EeddURB41A_2jwIYGxJjow/exec';   // Ganti dengan URL Aplikasi Web GAS untuk FAQ
+        const USER_TOKEN_KEY = 'userToken';
+        const USER_USERNAME_KEY = 'username';
+
+        const authSection = document.getElementById('authSection');
+        const appSection = document.getElementById('appSection');
+        const loggedInUsernameSpan = document.getElementById('loggedInUsername');
+        const authForm = document.getElementById('authForm');
+        const authUsernameInput = document.getElementById('authUsername');
+        const authPasswordInput = document.getElementById('authPassword');
+        const authMessageDiv = document.getElementById('authMessage');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        const faqForm = document.getElementById('faqForm');
+        const faqIdInput = document.getElementById('faqId');
+        const faqQuestionInput = document.getElementById('faqQuestion');
+        const faqAnswerInput = document.getElementById('faqAnswer');
+        const faqMediaUrlInput = document.getElementById('faqMediaUrl'); // BARU
+        const submitFaqBtn = document.getElementById('submitFaqBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const faqMessageDiv = document.getElementById('faqMessage');
+        const faqsContainer = document.getElementById('faqsContainer');
+
+        // --- Helper Functions ---
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `message ${type}`;
+            element.style.display = 'block';
+            setTimeout(() => element.style.display = 'none', 5000);
+        }
+
+        async function makeRequest(url, method, data = null, requiresAuth = false) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (requiresAuth) {
+                const token = localStorage.getItem(USER_TOKEN_KEY);
+                if (!token) {
+                    logoutUser();
+                    throw new Error('No authentication token found. Please log in again.');
+                }
+                headers['X-Auth-Token'] = token; // Sesuai dengan cara GAS membaca header ini
+            }
+
+            const options = {
+                method: method,
+                headers: headers
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                // Pastikan respons dibaca sebagai teks terlebih dahulu untuk debugging
+                const responseText = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (jsonError) {
+                    // Jika bukan JSON, mungkin itu error dari GAS itu sendiri atau respons HTML
+                    console.error('Failed to parse JSON response:', responseText, jsonError);
+                    throw new Error(`Server responded with non-JSON: ${responseText.substring(0, 100)}...`);
+                }
+                
+                if (!response.ok || result.success === false) { // Periksa juga properti success dari GAS
+                    throw new Error(result.message || `HTTP error! status: ${response.status}`);
+                }
+                return result;
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+        }
+        
+        function isImageUrl(url) {
+            return (/\.(gif|jpe?g|png|webp|avif)$/i).test(url);
+        }
+
+        function isVideoUrl(url) {
+            return (/\.(mp4|webm|ogg)$/i).test(url);
+        }
+
+        function renderFAQs(faqs) {
+            faqsContainer.innerHTML = '';
+            if (faqs.length === 0) {
+                faqsContainer.innerHTML = '<p>No FAQs available yet.</p>';
+                return;
+            }
+            faqs.forEach(faq => {
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item';
+                let mediaHtml = '';
+                if (faq.mediaUrl) {
+                    if (isImageUrl(faq.mediaUrl)) {
+                        mediaHtml = `<div class="media-container"><img src="${faq.mediaUrl}" alt="FAQ Media"></div>`;
+                    } else if (isVideoUrl(faq.mediaUrl)) {
+                        mediaHtml = `<div class="media-container"><video controls><source src="${faq.mediaUrl}" type="video/mp4">Your browser does not support the video tag.</video></div>`;
+                    } else {
+                        mediaHtml = `<div class="media-container"><a href="${faq.mediaUrl}" target="_blank">View Media Link</a></div>`;
+                    }
+                }
+
+                faqItem.innerHTML = `
+                    <h3>${faq.question}</h3>
+                    <p>${faq.answer}</p>
+                    ${mediaHtml} <div class="faq-actions">
+                        <button onclick="editFaq('${faq.id}', \`${faq.question}\`, \`${faq.answer}\`, \`${faq.mediaUrl || ''}\`)">Edit</button>
+                        <button class="logout-btn" onclick="deleteFaq('${faq.id}')">Delete</button>
+                    </div>
+                `;
+                faqsContainer.appendChild(faqItem);
+            });
+        }
+
+        function resetFaqForm() {
+            faqIdInput.value = '';
+            faqQuestionInput.value = '';
+            faqAnswerInput.value = '';
+            faqMediaUrlInput.value = ''; // BARU
+            submitFaqBtn.textContent = 'Add FAQ';
+            cancelEditBtn.style.display = 'none';
+        }
+
+        // --- Auth Functions (Tidak Berubah dari sebelumnya) ---
+        async function handleAuth(type) {
+            const username = authUsernameInput.value;
+            const password = authPasswordInput.value;
+
+            if (!username || !password) {
+                showMessage(authMessageDiv, 'Please enter username and password.', 'error');
+                return;
+            }
+
+            try {
+                const data = await makeRequest(AUTH_SERVICE_URL, 'POST', {
+                    action: type, // 'login' or 'register'
+                    username: username,
+                    password: password
+                });
+
+                if (data.success) {
+                    showMessage(authMessageDiv, data.message, 'success');
+                    if (type === 'login') {
+                        localStorage.setItem(USER_TOKEN_KEY, data.token);
+                        localStorage.setItem(USER_USERNAME_KEY, data.username);
+                        checkAuthStatus(); // Update UI
+                    } else {
+                        authUsernameInput.value = '';
+                        authPasswordInput.value = '';
+                    }
+                } else {
+                    showMessage(authMessageDiv, data.message || 'Authentication failed.', 'error');
+                }
+            } catch (error) {
+                showMessage(authMessageDiv, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function logoutUser() {
+            localStorage.removeItem(USER_TOKEN_KEY);
+            localStorage.removeItem(USER_USERNAME_KEY);
+            checkAuthStatus();
+            showMessage(authMessageDiv, 'Logged out successfully.', 'success');
+        }
+
+        function checkAuthStatus() {
+            const token = localStorage.getItem(USER_TOKEN_KEY);
+            const username = localStorage.getItem(USER_USERNAME_KEY);
+
+            if (token && username) {
+                authSection.style.display = 'none';
+                appSection.style.display = 'block';
+                loggedInUsernameSpan.textContent = username;
+                fetchFAQs(); // Load FAQs after login
+            } else {
+                authSection.style.display = 'block';
+                appSection.style.display = 'none';
+            }
+        }
+
+        // --- FAQ Management Functions (Direvisi) ---
+        async function fetchFAQs() {
+            try {
+                faqsContainer.innerHTML = '<p>Loading FAQs...</p>';
+                const data = await makeRequest(FAQ_SERVICE_URL + '?action=getAllFaqs', 'GET', null, true); // Kirim action di query string untuk GET
+                if (data.success) {
+                    renderFAQs(data.faqs);
+                } else {
+                    showMessage(faqMessageDiv, data.message || 'Failed to fetch FAQs.', 'error');
+                    faqsContainer.innerHTML = '<p>Error loading FAQs.</p>';
+                }
+            } catch (error) {
+                showMessage(faqMessageDiv, `Error fetching FAQs: ${error.message}`, 'error');
+                faqsContainer.innerHTML = '<p>Error loading FAQs.</p>';
+            }
+        }
+
+        async function submitFaq() {
+            const id = faqIdInput.value;
+            const question = faqQuestionInput.value;
+            const answer = faqAnswerInput.value;
+            const mediaUrl = faqMediaUrlInput.value; // BARU
+
+            if (!question || !answer) {
+                showMessage(faqMessageDiv, 'Please fill in both question and answer.', 'error');
+                return;
+            }
+
+            const action = id ? 'updateFaq' : 'addFaq';
+            const method = 'POST'; 
+
+            try {
+                const data = await makeRequest(FAQ_SERVICE_URL, method, {
+                    action: action,
+                    id: id,
+                    question: question,
+                    answer: answer,
+                    mediaUrl: mediaUrl // BARU
+                }, true); // Requires auth
+
+                if (data.success) {
+                    showMessage(faqMessageDiv, data.message, 'success');
+                    resetFaqForm();
+                    fetchFAQs(); // Refresh the list
+                } else {
+                    showMessage(faqMessageDiv, data.message || 'Operation failed.', 'error');
+                }
+            } catch (error) {
+                showMessage(faqMessageDiv, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function editFaq(id, question, answer, mediaUrl) { // Parameter mediaUrl BARU
+            faqIdInput.value = id;
+            faqQuestionInput.value = question;
+            faqAnswerInput.value = answer;
+            faqMediaUrlInput.value = mediaUrl; // BARU
+            submitFaqBtn.textContent = 'Update FAQ';
+            cancelEditBtn.style.display = 'inline-block';
+        }
+
+        async function deleteFaq(id) {
+            if (!confirm('Are you sure you want to delete this FAQ?')) {
+                return;
+            }
+            try {
+                const data = await makeRequest(FAQ_SERVICE_URL, 'POST', {
+                    action: 'deleteFaq',
+                    id: id
+                }, true); // Requires auth
+
+                if (data.success) {
+                    showMessage(faqMessageDiv, data.message, 'success');
+                    fetchFAQs(); // Refresh the list
+                } else {
+                    showMessage(faqMessageDiv, data.message || 'Deletion failed.', 'error');
+                }
+            } catch (error) {
+                showMessage(faqMessageDiv, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Event Listeners ---
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            handleAuth('login');
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            handleAuth('register');
+        });
+
+        logoutBtn.addEventListener('click', logoutUser);
+
+        faqForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitFaq();
+        });
+
+        cancelEditBtn.addEventListener('click', resetFaqForm);
+
+        // Initial check on page load
+        checkAuthStatus();
+
+    </script>
+</body>
+</html>

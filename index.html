@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Panel - Helpdesk LKPM</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; } /* Added Inter font */
+  .msg-preview {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
+  textarea { resize: vertical; }
+  .table-responsive { max-height: 70vh; overflow-y: auto; }
+  
+  /* Updated header background for a calmer, more elegant look */
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #4A5568; /* Dark Blue-Grey Solid for elegance */
+    color: #fff;
+    z-index: 2;
+    text-align: center;
+  }
+
+  textarea.form-control-sm { min-height: 100px; }
+
+  /* Status colors - using simpler class names for consistency */
+  .status-Open { background-color: #fff3cd; }         /* Yellow */
+  .status-InProgress { background-color: #cfe2ff; } /* Light Blue */
+  .status-Closed { background-color: #d1e7dd; }       /* Light Green */
+
+  tbody tr:nth-child(even) { background-color: #f8f9fa; }
+  tbody tr:hover { background-color: #e2e6ea; }
+
+  /* Styles for Dashboard Overview */
+  .dashboard-overview {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .summary-item {
+    text-align: center;
+    padding: 15px 0;
+  }
+  /* Border for summary items to fit 5 columns */
+  .summary-item.border-right-fix {
+    border-right: 1px solid #eee;
+  }
+  /* Ensure the last item doesn't have a right border */
+  .row.border .summary-item:last-child {
+      border-right: none !important;
+  }
+
+  .top-categories ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .top-categories li {
+    padding: 5px 0;
+    border-bottom: 1px dashed #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .top-categories li:last-child {
+    border-bottom: none;
+  }
+  .top-categories .category-name {
+    font-weight: 500;
+  }
+  .top-categories .category-count {
+    background-color: #e9ecef;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+
+  /* Custom Kalem & Elegan Palette for summary numbers */
+  .color-elegant-total { color: #4F6D7A; } /* Cadet Grey */
+  .color-elegant-open { color: #CD5353; } /* Terra Cotta (soft red) */
+  .color-elegant-in-progress { color: #F5B841; } /* Goldenrod (soft yellow) */
+  .color-elegant-closed { color: #6B9E8B; } /* Green Sheen (soft green) */
+  .color-elegant-new-today { color: #849EB2; } /* Grey Blue (soft blue) */
+
+  /* Profile dropdown specific styles */
+  .dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .dropdown-header {
+    font-weight: bold;
+    color: #343a40;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+  }
+  .dropdown-item {
+    padding: 8px 16px;
+  }
+  .dropdown-item.text-danger {
+    font-weight: 500;
+  }
+
+  /* Toggle button for dashboard */
+  .dashboard-toggle-btn {
+    cursor: pointer;
+    font-size: 1.2rem;
+    margin-left: 10px;
+    transition: transform 0.3s ease;
+  }
+  .dashboard-toggle-btn.collapsed {
+    transform: rotate(-90deg);
+  }
+
+  /* Login page specific styles */
+  .login-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    padding: 40px;
+    max-width: 450px; /* Slightly wider card for better aesthetics */
+    margin: 50px auto; /* Center the card vertically and horizontally */
+  }
+  .login-card h4 {
+    color: #343a40;
+    margin-bottom: 30px;
+    font-weight: 600;
+  }
+  .input-group-text {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #495057;
+  }
+  .form-control {
+    border-left: none; /* Remove left border for input when used with input-group-text */
+  }
+  .form-control:focus {
+    box-shadow: none; /* Remove default focus shadow for cleaner look */
+    border-color: #86b7fe;
+  }
+  .btn-dark {
+    background-color: #343a40;
+    border-color: #343a40;
+    transition: background-color 0.3s ease;
+  }
+  .btn-dark:hover {
+    background-color: #495057;
+    border-color: #495057;
+  }
+  .login-logo {
+    display: block; /* Make it a block element to center */
+    margin: 0 auto 20px auto; /* Center horizontally and add bottom margin */
+    max-width: 150px; /* Limit logo size */
+    height: auto;
+  }
+</style>
+</head>
+<body>
+<div id="loginSection" class="container py-5">
+  <div class="login-card">
+    <!-- Updated with your provided logo URL -->
+    <!--img src="https://drive.google.com/uc?export=view&id=1EEsECZT3Xrbw7jdlAPDJLTM7_rn3wOIR" alt="Company Logo" class="login-logo"-->  
+    <h4 class="mb-3 text-center">LKPM DESK</h4> <!-- Changed title to be more specific -->
+    <div class="mb-3">
+      <label class="form-label visually-hidden">Email</label> <!-- Hidden label for accessibility -->
+      <div class="input-group">
+        <span class="input-group-text">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
+            <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.403L6.942 14H14a1 1 0 0 0 1-1zm-13 0A1 1 0 0 1 2 13V6.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.403L6.942 14H14a1 1 0 0 0 1-1zM1 11.105l4.708-2.825L1 5.383z"/>
+          </svg>
+        </span>
+        <input type="email" id="email" class="form-control" placeholder="Email">
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label visually-hidden">Password</label> <!-- Hidden label for accessibility -->
+      <div class="input-group">
+        <span class="input-group-text">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock" viewBox="0 0 16 16">
+            <path d="M8 1a2 2 0 0 0-2 2v4H5a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H10V3a2 2 0 0 0-2-2zm3 6V3a3 3 0 0 0-6 0v4h6z"/>
+          </svg>
+        </span>
+        <input type="password" id="password" class="form-control" placeholder="Password">
+      </div>
+    </div>
+    <div class="d-grid">
+      <button onclick="login()" class="btn btn-dark">Login</button>
+    </div>
+  </div>
+</div>
+
+<div id="adminPanel" style="display: none;">
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+      <!-- Re-added the Admin Panel title -->
+      <span class="navbar-brand mb-0 h1">Admin Panel - Helpdesk LKPM</span>
+      
+      <!-- START: Profile Dropdown -->
+      <div class="dropdown ms-auto"> <!-- Added ms-auto to push dropdown to the right -->
+        <button class="btn btn-outline-light btn-sm dropdown-toggle rounded-pill px-3" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <!-- SVG Icon for Profile -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-person-circle me-2" viewBox="0 0 16 16">
+            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+            <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1Z"/>
+          </svg>
+          <span id="displayUsername">Admin</span> <!-- Placeholder for username on the button -->
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+          <li><h6 class="dropdown-header">Profil Pengguna</h6></li>
+          <li><a class="dropdown-item disabled" href="#">Username: <span id="profileUsername">Memuat...</span></a></li>
+          <li><a class="dropdown-item disabled" href="#">Role: <span id="profileRole">Memuat...</span></a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><button class="dropdown-item text-danger" onclick="logout()">Logout</button></li>
+        </ul>
+      </div>
+      <!-- END: Profile Dropdown -->
+
+    </div>
+  </nav>
+
+  <main class="container-fluid py-3">
+    <!-- START Dashboard Overview -->
+    <div class="dashboard-overview">
+      <h5 class="mb-3 text-center text-primary d-flex justify-content-center align-items-center">
+        Dashboard Overview
+        <!-- Toggle button for dashboard visibility -->
+        <span id="dashboardToggle" class="dashboard-toggle-btn" onclick="toggleDashboard()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </span>
+      </h5>
+      <!-- Content to be toggled -->
+      <div id="dashboardContent">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="row border rounded p-3 me-md-2 h-100 align-items-center">
+              <div class="col summary-item border-right-fix">
+                <h4 id="summaryTotal" class="color-elegant-total">0</h4>
+                <p>Total Tiket</p>
+              </div>
+              <div class="col summary-item border-right-fix">
+                <h4 id="summaryOpen" class="color-elegant-open">0</h4>
+                <p>Tiket Terbuka</p>
+              </div>
+              <div class="col summary-item border-right-fix">
+                <h4 id="summaryInProgress" class="color-elegant-in-progress">0</h4>
+                <p>Dalam Proses</p>
+              </div>
+              <div class="col summary-item border-right-fix">
+                <h4 id="summaryClosed" class="color-elegant-closed">0</h4>
+                <p>Tiket Ditutup</p>
+              </div>
+              <div class="col summary-item">
+                <h4 id="summaryNewToday" class="color-elegant-new-today">0</h4>
+                <p>Tiket Baru Hari Ini</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mt-3 mt-md-0">
+            <div class="top-categories border rounded p-3 h-100">
+              <h6 class="text-center mb-3">Top 5 Kategori Tiket</h6>
+              <ul id="topCategoriesList">
+                <!-- Categories will be rendered here by JS -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Dashboard Overview -->
+
+    <div class="row g-3 mb-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label mb-1">Filter Status</label>
+        <select id="filterStatus" class="form-select" onchange="onFilterChange()">
+          <option value="">Semua</option>
+          <option>Open</option>
+          <option>In Progress</option>
+          <option>Closed</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-1">Filter Tanggal</label>
+        <input type="date" id="filterTanggal" class="form-control" onchange="onFilterChange()">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-1">Cari Nama Perusahaan / Tiket</label>
+        <input id="searchKeyword" class="form-control" oninput="onFilterChange()" placeholder="Cari...">
+      </div>
+      <!-- START: Updated Buttons Section -->
+      <div class="col-md-3">
+        <label class="form-label mb-1">&nbsp;</label> <!-- Placeholder for alignment -->
+        <div class="btn-group w-100" role="group">
+            <button class="btn btn-primary" onclick="exportData()">Export Laporan</button>
+            <button id="refreshBtn" class="btn btn-outline-secondary" onclick="loadTickets()" title="Refresh Data Terbaru">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"></path>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"></path>
+                </svg>
+            </button>
+        </div>
+      </div>
+      <!-- END: Updated Buttons Section -->
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>#</th><th>Tanggal</th><th>Nomor Tiket</th><th>Kategori</th><th>Status</th><th>Feedback</th><th>Petugas</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="ticketList"></tbody>
+      </table>
+    </div>
+
+    <nav>
+      <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
+  </main>
+</div>
+
+<!-- Modal Detail Tiket -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Detail Tiket</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="detailBody"></div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// PASTIKAN URL INI SUDAH DI-UPDATE SETELAH REDEPLOY GAS DENGAN PERUBAHAN ROLE
+const WEBAPP_URL="//script.google.com/macros/s/AKfycbzXAT8IIxOINmwpZyVpBHa1sgrKXoQm48FuhY9vxFe85WX3DBCqKTUWRH9twuU_YVqjDw/exec";//lkpm
+let allTickets = [], filtered = [];
+const pageSize = 100;
+let currentPage = 1;
+const PETUGAS_LIST = ["-","Malik", "Dipo", "Ruri", "Avisa", "Lavika", "Khairul", "Rony","Clavia"]; // Daftar petugas yang tersedia
+
+function login() {
+  const emailInput = document.getElementById("email").value;
+  const passwordInput = document.getElementById("password").value;
+
+  fetch(WEBAPP_URL + "?login=true&email=" + encodeURIComponent(emailInput) + "&password=" + encodeURIComponent(passwordInput))
+    .then(res => res.json()) // Mengubah .text() menjadi .json() untuk respons dari GAS
+    .then(data => {
+      if (data.status === "success") {
+        sessionStorage.setItem("admin_email", emailInput);
+        sessionStorage.setItem("admin_role", data.role); // Simpan role yang diterima dari GAS
+        
+        document.getElementById("loginSection").style.display = 'none';
+        document.getElementById("adminPanel").style.display = 'block';
+        
+        displayUserProfile(); // Panggil fungsi untuk menampilkan profil
+        loadTickets();
+      } else {
+        alert("Login gagal. Email atau password salah.");
+      }
+    })
+    .catch(error => {
+      console.error("Error during login:", error);
+      alert("Terjadi kesalahan saat login. Coba lagi.");
+    });
+}
+
+function logout() {
+  sessionStorage.clear();
+  location.reload();
+}
+
+// NEW FUNCTION: displayUserProfile()
+function displayUserProfile() {
+  const username = sessionStorage.getItem("admin_email");
+  const role = sessionStorage.getItem("admin_role");
+
+  console.log("Logged in user role from sessionStorage:", role); // DEBUGGING: Log role
+
+  if (username) {
+    // Menampilkan username di tombol dropdown (bisa disingkat jika terlalu panjang)
+    document.getElementById("displayUsername").textContent = username.split('@')[0];  
+    // Menampilkan username lengkap di dalam dropdown
+    document.getElementById("profileUsername").textContent = username;  
+    // Menampilkan role di dalam dropdown
+    document.getElementById("profileRole").textContent = role || 'Tidak Diketahui';  
+  }
+}
+
+// NEW FUNCTION: toggleDashboard()
+function toggleDashboard() {
+  const dashboardContent = document.getElementById('dashboardContent');
+  const toggleButton = document.getElementById('dashboardToggle');
+  
+  if (dashboardContent.style.display === 'none') {
+    dashboardContent.style.display = 'block'; // Tampilkan konten
+    toggleButton.classList.remove('collapsed'); // Rotasi ikon ke bawah
+  } else {
+    dashboardContent.style.display = 'none'; // Sembunyikan konten
+    toggleButton.classList.add('collapsed'); // Rotasi ikon ke atas
+  }
+}
+
+
+function onFilterChange() {
+  currentPage = 1;
+  applyFilter();
+}
+
+function applyFilter() {
+  const status = document.getElementById('filterStatus').value;
+  const tanggal = document.getElementById('filterTanggal').value;
+  const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+
+  filtered = allTickets.filter(t => {
+    const matchStatus = !status || t.status === status;
+    const matchTanggal = !tanggal || (t.tanggal_pelaporan || "").startsWith(tanggal);
+    const matchKeyword =
+      !keyword || 
+      String(t.nomor_tiket || '').toLowerCase().includes(keyword) ||
+      String(t.nama_pelaku_usaha || '').toLowerCase().includes(keyword) ||
+      String(t.nib || '').toLowerCase().includes(keyword);
+
+    return matchStatus && matchTanggal && matchKeyword;
+  }).sort((a,b)=> new Date(b.tanggal_pelaporan) - new Date(a.tanggal_pelaporan));
+
+  renderPagination();
+  renderTable();
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const ul = document.getElementById('pagination');
+  ul.innerHTML = '';
+  for(let p=1; p<=totalPages; p++){
+    ul.innerHTML += `<li class="page-item ${p===currentPage? 'active':''}"><a class="page-link" href="#" onclick="goPage(${p})">${p}</a></li>`;
+  }
+}
+
+function goPage(p){
+  currentPage = p;
+  renderPagination();
+  renderTable();
+}
+
+// UPDATED: loadTickets() now handles the refresh button state
+function loadTickets(){
+    const refreshButton = document.getElementById('refreshBtn');
+    const originalIconHTML = refreshButton ? refreshButton.innerHTML : ''; // Store original icon
+    
+    // Disable button and show spinner
+    if (refreshButton) {
+        refreshButton.disabled = true;
+        refreshButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+    }
+
+  fetch(WEBAPP_URL + "?all=true")
+    .then(res => res.json())
+    .then(data => {
+      allTickets = data.tickets;
+      
+      // Render Summary Data
+      document.getElementById('summaryTotal').textContent = data.summary.total;
+      document.getElementById('summaryOpen').textContent = data.summary.open;
+      document.getElementById('summaryInProgress').textContent = data.summary.inProgress;
+      document.getElementById('summaryClosed').textContent = data.summary.closed;
+      document.getElementById('summaryNewToday').textContent = data.summary.newToday;
+
+      // Render Top 5 Categories
+      const topCategoriesList = document.getElementById('topCategoriesList');
+      topCategoriesList.innerHTML = '';
+      if (data.topCategories && data.topCategories.length > 0) {
+        data.topCategories.forEach(cat => {
+          topCategoriesList.insertAdjacentHTML('beforeend', `
+            <li>
+              <span class="category-name">${cat.category}</span>
+              <span class="category-count">${cat.count} Tiket</span>
+            </li>
+          `);
+        });
+      } else {
+        topCategoriesList.innerHTML = '<li>Tidak ada data kategori.</li>';
+      }
+
+      applyFilter();
+    })
+    .catch(error => {
+      console.error('Error loading tickets:', error);
+      alert('❌ Gagal memuat data tiket. Periksa koneksi Anda.');
+    })
+    .finally(() => {
+        // Re-enable button and restore icon
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            refreshButton.innerHTML = originalIconHTML;
+        }
+    });
+}
+
+function renderTable(){
+  const tbody = document.getElementById("ticketList");
+  tbody.innerHTML = '';
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  const userRole = sessionStorage.getItem("admin_role");  
+  // DEBUGGING: Log the role being checked
+  console.log("Role from sessionStorage in renderTable:", userRole);  
+  // Make the comparison case-insensitive and trim whitespace for robustness
+  const isDataProcessor = (userRole || '').toLowerCase().trim() === 'pengolah data';  
+  console.log("isDataProcessor (should be true for 'pengolah data'):", isDataProcessor);
+
+  pageData.forEach((t,i) => {
+    const idx = start + i;
+    const statusClass = `status-${t.status.replace(/\s/g,'')}`;
+    
+    // Determine if status select, feedback textarea, petugas select, and save button should be disabled
+    const disableControls = isDataProcessor ? 'disabled' : '';
+
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr class="${statusClass}">
+        <td>${idx+1}</td>
+        <td>${formatTanggal(t.tanggal_pelaporan)}</td>
+        <td><a href="#" onclick="showDetail(${idx})">${t.nomor_tiket}</a></td>
+        <td>${t.category_kendala || '-'}</td>
+        <td>
+          <select class="form-select form-select-sm" id="status-${idx}" ${disableControls}>
+            ${["Open","In Progress","Closed"].map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td><textarea id="fb-${idx}" class="form-control form-control-sm" ${disableControls}>${t.feedback||''}</textarea></td>
+        <td><select id="ptgs-${idx}" class="form-select form-select-sm" ${disableControls}>${PETUGAS_LIST.map(p=>`<option ${p===t.petugas?'selected':''}>${p}</option>`).join('')}</select></td>
+        
+        <td><button onclick="save(${idx})" class="btn btn-success btn-sm" ${disableControls}>Save</button></td>
+      </tr>
+    `);
+  });
+}
+
+function formatTanggal(isoStr) {
+  if (!isoStr) return '-';
+  const dt = new Date(isoStr);
+  return dt.toLocaleString('id-ID', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function save(idx){
+  const t = filtered[idx];
+  const status = document.getElementById(`status-${idx}`).value;
+  const feedback = document.getElementById(`fb-${idx}`).value;
+  const petugas = document.getElementById(`ptgs-${idx}`).value;
+
+  const userRole = sessionStorage.getItem("admin_role");
+  const isDataProcessor = (userRole || '').toLowerCase().trim() === 'pengolah data';
+
+  if (isDataProcessor) {
+    showToast('Anda tidak memiliki izin untuk mengubah status tiket.', false);
+    return;
+  }
+
+  // --- START Validasi Kolom ---
+  if (status !== 'Open' && feedback.trim() === '') {
+    showToast('Kolom Feedback wajib diisi jika status bukan "Open".', false);
+    document.getElementById(`fb-${idx}`).focus();
+    return;
+  }
+  if (status !== 'Open' && petugas === '-') {
+    showToast('Kolom Petugas wajib dipilih jika status bukan "Open".', false);
+    document.getElementById(`ptgs-${idx}`).focus();
+    return;
+  }
+  // --- END Validasi Kolom ---
+
+  // Tampilkan loading pada tombol
+  const saveBtn = document.querySelector(`#ticketList tr:nth-child(${idx+1}) button`);
+  const originalBtnHTML = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Proses...';
+
+  fetch(WEBAPP_URL, {
+    method: 'POST',
+    body: new URLSearchParams({
+      action: 'update',
+      nomor_tiket: t.nomor_tiket,
+      nib: t.nib,
+      status, feedback, petugas
+    })
+  }).then(r=>r.text()).then(res=>{
+    if(res==='updated'){
+      loadTickets();
+      showToast('✅ Tiket berhasil diperbarui', true);
+    } else showToast('❌ Gagal: ' + res, false);
+  }).catch(error => {
+    console.error('Error saving ticket:', error);
+    showToast('❌ Terjadi kesalahan saat menyimpan: ' + error.message, false);
+  }).finally(() => {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = originalBtnHTML;
+  });
+}
+
+function showDetail(idx) {
+  const t = filtered[idx];
+  document.getElementById("detailBody").innerHTML = `
+    <div class="row">
+      <div class="col-md-6">
+        <strong>nomor Tiket:</strong><br>${t.nomor_tiket || '-'}<br><br>
+        <strong>NIB:</strong><br>${t.nib || '-'}<br><br>
+        <strong>Nama Perusahaan:</strong><br>${t.nama_pelaku_usaha || '-'}<br><br>
+        <strong>NKU:</strong><br>${t.nku || '-'}
+      </div>
+      <div class="col-md-6">
+        <strong>Pesan:</strong><br>${t.message || '-'}<br><br>
+        ${t.media ? `<strong>Media:</strong><br><a href="${t.media}" target="_blank">Lihat Lampiran</a>` : ''}
+      </div>
+    </div>
+  `;
+  new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
+
+// NEW FUNCTION: exportData()
+function exportData() {
+  const exportButton = document.querySelector('.btn-primary[onclick="exportData()"]');
+  exportButton.textContent = 'Mengekspor...';
+  exportButton.disabled = true;
+
+  // Change action parameter to 'exportXls'
+  fetch(WEBAPP_URL + "?action=exportXls")  
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json(); // Expect JSON response with downloadUrl
+    })
+    .then(data => {
+      if (data.status === "success" && data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank'); // Open the download URL in a new tab
+        alert('✅ Laporan berhasil diekspor! File akan diunduh atau dibuka di tab baru.');
+      } else {
+        alert('❌ Gagal mengekspor laporan: ' + (data.message || 'URL unduhan tidak tersedia.'));
+      }
+    })
+    .catch(error => {
+      console.error('Error exporting data:', error);
+      alert('❌ Terjadi kesalahan saat menyimpan: ' + error.message);
+    })
+    .finally(() => {
+      exportButton.textContent = 'Export Laporan';
+      exportButton.disabled = false;
+    });
+}
+
+function showToast(message, isSuccess = true) {
+  // Hapus toast lama jika ada
+  const oldToast = document.getElementById('customToast');
+  if (oldToast) oldToast.remove();
+  const toast = document.createElement('div');
+  toast.id = 'customToast';
+  toast.style.position = 'fixed';
+  toast.style.top = '50%';
+  toast.style.left = '50%';
+  toast.style.transform = 'translate(-50%, -50%)';
+  toast.style.zIndex = '9999';
+  toast.style.background = isSuccess ? '#4BB543' : '#CD5353';
+  toast.style.color = '#fff';
+  toast.style.padding = '18px 32px';
+  toast.style.borderRadius = '10px';
+  toast.style.fontSize = '1.2rem';
+  toast.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+  toast.style.textAlign = 'center';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
+}
+
+window.onload = () => {
+  if (sessionStorage.getItem("admin_email")) {
+    document.getElementById("loginSection").style.display = 'none';
+    document.getElementById("adminPanel").style.display = 'block';
+    displayUserProfile(); // Panggil saat memuat halaman jika sudah login
+    loadTickets();
+    // Polling otomatis dihapus, diganti dengan tombol refresh manual
+  } else {
+    document.getElementById("loginSection").style.display = 'block';
+    document.getElementById("adminPanel").style.display = 'none';
+  }
+};
+</script>
+
+</body>
+</html>
